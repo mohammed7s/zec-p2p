@@ -1,0 +1,19 @@
+{
+  "name": "dvc-client",
+  "version": "0.1.1",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@primuslabs/network-core-sdk": "^0.1.4",
+    "ccxt": "^4.5.11",
+    "dotenv": "^16.3.1",
+    "ethers": "^5.7.2",
+    "undici": "^7.16.0"
+  }
+}
