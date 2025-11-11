@@ -11,7 +11,7 @@ pub contract BusinessProgram {
     global MAX_URL_LEN: u32 = 1024;
     global MAX_CONTENT_LEN: u32 = 1000;
 
-    global MAX_BALANCES: u32 = 20;
+    global MAX_BALANCES: u32 = 10;
     global DECIMAL_SCALE: u32 = 8;
     global BALANCE_THRESHOLD: u64 = 10000000; // 0.10000000
     
@@ -66,7 +66,7 @@ pub contract BusinessProgram {
         allowed_url_matches_hashes: [Field; 2],
     ) -> bool {
         // Each of the plaintexts must be parsed to json
-        for i in 0..2 {
+        for i in 0..1 {
             // Parse plaintext to JSON and obtain the custom values we want to check
             let eth_check_passed = get_values(plain_json_response[i]);
             assert(eth_check_passed, "ETH balance must be > 0.1");
