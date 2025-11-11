@@ -8,8 +8,8 @@ pub contract BusinessProgram {
     use aztec::protocol_types::{address::AztecAddress, hash::poseidon2_hash};
     use aztec::state_vars::{public_immutable::PublicImmutable, public_mutable::PublicMutable};
 
-    global MAX_URL_LEN: u32 = 1024;
-    global MAX_CONTENT_LEN: u32 = 1000;
+    global MAX_URL_LEN: u32 = 200;
+    global MAX_CONTENT_LEN: u32 = 2200;
 
     global MAX_BALANCES: u32 = 10;
     global DECIMAL_SCALE: u32 = 8;
