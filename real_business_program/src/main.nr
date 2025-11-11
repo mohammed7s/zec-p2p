@@ -9,7 +9,7 @@ pub contract BusinessProgram {
     use aztec::state_vars::{public_immutable::PublicImmutable, public_mutable::PublicMutable};
 
     global MAX_URL_LEN: u32 = 200;
-    global MAX_CONTENT_LEN: u32 = 2200;
+    global MAX_CONTENT_LEN: u32 = 1800;
 
     global MAX_BALANCES: u32 = 10;
     global DECIMAL_SCALE: u32 = 8;
@@ -88,10 +88,11 @@ pub contract BusinessProgram {
         // verify_sanitized_ascii(plaintext, sanitized);
 
         
-        let json = JSON2kb::parse_bounded_vec_json(plaintext);
-        let key_balances: BoundedVec<u8, 8> = BoundedVec::from_array("balances".as_bytes());
+        // let json = JSON2kb::parse_bounded_vec_json(plaintext);
+        // let key_balances: BoundedVec<u8, 8> = BoundedVec::from_array("balances".as_bytes());
        
-        let balances = json.get_array(key_balances).unwrap();
+        // let balances = json.get_array(key_balances).unwrap();
+        let balances = JSON2kb::parse_bounded_vec_json(plaintext);
         let balances_len = balances.get_length();
         
         let key_asset: BoundedVec<u8, 5> = BoundedVec::from_array("asset".as_bytes());

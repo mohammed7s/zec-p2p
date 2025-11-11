@@ -14,7 +14,7 @@ pub contract AttVerifier {
     use string_search::{StringBody, StringBody1024, SubString, SubString1024};
 
     global MAX_URL_LEN: u32 = 200;
-    global MAX_CONTENT_LEN: u32 = 2200;
+    global MAX_CONTENT_LEN: u32 = 1800;
 
     //Emitted public log limit: 13 fields
     #[event]

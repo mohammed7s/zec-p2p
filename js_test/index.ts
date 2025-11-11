@@ -19,7 +19,8 @@ import { error } from "console";
 
 const MAX_RESPONSE_NUM = 1;
 const AllOWED_URL = ["https://api.binance.com/api/v3/account"];
-const ATT_PATH = process.argv[2] ?? "testdata/eth_hash.json";
+// const ATT_PATH = process.argv[2] ?? "testdata/eth_hash.json";
+const ATT_PATH = process.argv[2] ?? "testdata/binance-balances.json";
 
 const node = createAztecNodeClient("http://localhost:8080");
 const config = getPXEConfig();
@@ -91,7 +92,6 @@ for (const url of AllOWED_URL) {
 }
 
 
-
 const id = Math.floor(Math.random() * 9999999999);
 
 // Collect all hashes from public_data.attestation.data
@@ -104,8 +104,8 @@ for (const [key, value] of Object.entries(attData)) {
     const hashBytes = Array.from(Buffer.from(value, "hex"));
     data_hashes.push(hashBytes);
   }
-  // for eth_hash.json
-  if (key.startsWith("hash-of-response") && typeof value === "string" && value.length === 64) {
+  // for eth_hash.json/binance-balances.json
+  if (key.startsWith("hash-of") && typeof value === "string" && value.length === 64) {
     // Convert each 32-byte hex string into an array of bytes
     const hashBytes = Array.from(Buffer.from(value, "hex"));
     data_hashes.push(hashBytes);
@@ -122,7 +122,10 @@ const plain_json_response: number[][] = [];
 if (obj.private_data && Array.isArray(obj.private_data.plain_json_response)) {
   for (const entry of obj.private_data.plain_json_response) {
     if (entry.id && entry.content) {
-      const jsonBytes = Array.from(new TextEncoder().encode(entry.content));
+      // const hashContent = entry.content;
+      const hashContent = JSON.stringify(JSON.parse(entry.content)["balances"]);
+      // console.log("hashContent:", hashContent);
+      const jsonBytes = Array.from(new TextEncoder().encode(hashContent));
       plain_json_response.push(jsonBytes);
     }
   }

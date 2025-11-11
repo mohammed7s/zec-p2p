@@ -29,9 +29,9 @@ function getBinanaceRequestParams() {
   const responseResolves = [
     [
       {
-        keyName: "hash-of-response",
+        keyName: "hash-of-balances",
         parseType: "json",
-        parsePath: "$",
+        parsePath: "$.balances",
         op: "SHA256_EX"
       },
     ],
@@ -44,7 +44,7 @@ async function main() {
   const zkvmReqeustData = await doProve(requests, responseResolves, {
     requestParamsCallback: getBinanaceRequestParams,
   });
-  console.log("zkvmReqeustData:", JSON.stringify(zkvmReqeustData));
+  // console.log("zkvmReqeustData:", JSON.stringify(zkvmReqeustData));
   if (zkvmReqeustData && zkvmReqeustData.attestationData) {
     saveToFile("binance-attestation.json", JSON.stringify(zkvmReqeustData.attestationData));
   }

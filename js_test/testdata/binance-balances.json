@@ -1,0 +1,47 @@
+{
+  "verification_type": "HASH_COMPARSION",
+  "public_data": [
+    {
+      "attestation": {
+        "recipient": "0x810b7bacEfD5ba495bB688bbFD2501C904036AB7",
+        "request": [
+          {
+            "url": "https://api.binance.com/api/v3/account?timestamp=1762860622889&recvWindow=60000&omitZeroBalances=true&signature=c06a6372d1a9baeac6c276055c46032d58fd37e29b49747f53812163ca01e127",
+            "header": "",
+            "method": "GET",
+            "body": ""
+          }
+        ],
+        "responseResolves": [
+          {
+            "oneUrlResponseResolve": [
+              {
+                "keyName": "hash-of-balances",
+                "parseType": "",
+                "parsePath": "{\"type\":\"FIELD_ARITHMETIC\",\"op\":\"SHA256\",\"field\":\"$.balances\"}"
+              }
+            ]
+          }
+        ],
+        "data": "{\"hash-of-balances\":\"81e5dbc1d5932721e7448649f9cc86143f3486e3e64fe9e8b512c9e3bd24042a\",\"hash-of-balances.count\":\"1\"}",
+        "attConditions": "[{\"op\":\"REVEAL_HEX_STRING\",\"field\":\"{\\\"type\\\":\\\"FIELD_ARITHMETIC\\\",\\\"op\\\":\\\"SHA256\\\",\\\"field\\\":\\\"$.balances\\\"}\"}]",
+        "timestamp": 1762860644883,
+        "additionParams": "{\"algorithmType\":\"mpctls\"}"
+      },
+      "attestor": "0x0de886e31723e64aa72e51977b14475fb66a9f72",
+      "signature": "0xf5a30ed860e357e7276c753b029bcb9b5cf37c626307e08d7126a1b5cea5a9993db69afc1c51f28308a6da44c1449995cc281c34307cc2276d8552a57d82a0541c",
+      "reportTxHash": "0x86cb4147b607d646d6488d37c2b7db74453ce7c025fda0def93602bc584b332b",
+      "taskId": "0x8a5e027d9fe1b7c66a9f53440be528720a6153889354882c1a9bc1c7bec1eef8",
+      "attestationTime": 22040,
+      "attestorUrl": "d511b29f688cd0c2d7d9ec3e148e51b63a5390cf-18080.dstack-base-prod7.phala.network"
+    }
+  ],
+  "private_data": {
+    "plain_json_response": [
+      {
+        "id": "hash-of-balances",
+        "content": "{\"makerCommission\":10,\"takerCommission\":10,\"buyerCommission\":0,\"sellerCommission\":0,\"commissionRates\":{\"maker\":\"0.00100000\",\"taker\":\"0.00100000\",\"buyer\":\"0.00000000\",\"seller\":\"0.00000000\"},\"canTrade\":true,\"canWithdraw\":true,\"canDeposit\":true,\"brokered\":false,\"requireSelfTradePrevention\":false,\"preventSor\":false,\"updateTime\":1762816797991,\"accountType\":\"SPOT\",\"balances\":[{\"asset\":\"ETH\",\"free\":\"0.05592320\",\"locked\":\"0.00000000\"},{\"asset\":\"USDT\",\"free\":\"1687.20707245\",\"locked\":\"1163.64900000\"}],\"permissions\":[\"TRD_GRP_236\"],\"uid\":44509307}"
+      }
+    ]
+  }
+}

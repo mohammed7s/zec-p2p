@@ -3,7 +3,7 @@ use dep::aztec::macros::aztec;
 #[aztec]
 pub contract BusinessProgram {
     use aztec::macros::functions::private;
-    global MAX_CONTENT_LEN: u32 = 2200;
+    global MAX_CONTENT_LEN: u32 = 1800;
 
     #[private]
     fn verify(
