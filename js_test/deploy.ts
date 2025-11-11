@@ -5,12 +5,15 @@ import { TestWallet } from "@aztec/test-wallet/server";
 import { BusinessProgramContract } from "./bindings/BusinessProgram.js";
 import { createAztecNodeClient } from "@aztec/aztec.js";
 import { Barretenberg, Fr } from "@aztec/bb.js";
+import { getPXEConfig } from "@aztec/pxe/server";
 
 
 const AllOWED_URL = ["https://api.binance.com/api/v3/account", "https://www.okx.com", "https://x.com"];
 
 const node = createAztecNodeClient("http://localhost:8080");
-const wallet = await TestWallet.create(node);
+const config = getPXEConfig();
+config.proverEnabled = true;
+const wallet = await TestWallet.create(node, config);
 const [aliceAccount] = await getInitialTestAccountsData();
 let alice = await wallet.createSchnorrAccount(aliceAccount.secret, aliceAccount.salt);
 

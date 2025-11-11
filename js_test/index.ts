@@ -35,7 +35,9 @@ const node = createAztecNodeClient("http://localhost:8080");
 // const pxe = await createPXE(node, fullConfig, { store });
 // await waitForPXE(pxe);
 
-const wallet = await TestWallet.create(node);
+const config = getPXEConfig();
+config.proverEnabled = true;
+const wallet = await TestWallet.create(node, config);
 const [aliceAccount, bobAccount] = await getInitialTestAccountsData();
 let alice = await wallet.createSchnorrAccount(aliceAccount.secret, aliceAccount.salt);
 let bob = await wallet.createSchnorrAccount(bobAccount.secret, bobAccount.salt);

@@ -6,6 +6,7 @@ import { encodePacked } from "./lib/encoding";
 import { AttVerifierContract, SuccessEvent } from "./bindings/AttVerifier.js";
 import { getInitialTestAccountsData } from "@aztec/accounts/testing";
 import { TestWallet } from "@aztec/test-wallet/server";
+import { getPXEConfig } from "@aztec/pxe/server";
 import { Fr as aztec_fr } from "@aztec/aztec.js/fields";
 import { BusinessProgramContract } from "./bindings/BusinessProgram.js";
 import { performance } from "perf_hooks";
@@ -19,7 +20,9 @@ const ATT_PATH = process.argv[2] ?? "testdata/eth_hash.json";
 
 const node = createAztecNodeClient("http://localhost:8080");
 
-const wallet = await TestWallet.create(node);
+const config = getPXEConfig();
+config.proverEnabled = true;
+const wallet = await TestWallet.create(node, config);
 const [aliceAccount] = await getInitialTestAccountsData();
 let alice = await wallet.createSchnorrAccount(aliceAccount.secret, aliceAccount.salt);
 
