@@ -8,7 +8,10 @@ import { Barretenberg, Fr } from "@aztec/bb.js";
 import { getPXEConfig } from "@aztec/pxe/server";
 
 
-const AllOWED_URL = ["https://api.binance.com/sapi/v1/asset/wallet/balance"];
+// Allow Revolut transactions endpoint for this run
+const AllOWED_URL = [
+  "https://app.revolut.com/api/retail/user/current/transactions/last?count=20&internalPocketId=24e2e5ad-b4f4-4d3b-ac68-0dbd75e021d1",
+];
 
 const node = createAztecNodeClient("http://localhost:8080");
 const config = getPXEConfig();

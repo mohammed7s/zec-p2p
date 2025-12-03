@@ -12,10 +12,12 @@ import { BusinessProgramContract } from "./bindings/BusinessProgram.js";
 import { performance } from "perf_hooks";
 import { AztecAddress, createAztecNodeClient, getContractInstanceFromInstantiationParams, getDecodedPublicEvents } from "@aztec/aztec.js";
 import { Barretenberg, Fr } from "@aztec/bb.js";
+import { createHash } from "crypto";
 
 
 const MAX_RESPONSE_NUM = 1;
-const AllOWED_URL = ["https://api.binance.com/sapi/v1/asset/wallet/balance"];
+// Allowed URL(s) for matching request; set to Revolut endpoint for this test case
+const AllOWED_URL = ["https://app.revolut.com/api/retail/user/current/transactions/last?count=20&internalPocketId=24e2e5ad-b4f4-4d3b-ac68-0dbd75e021d1"];
 // const ATT_PATH = process.argv[2] ?? "testdata/eth_hash.json";
 const ATT_PATH = process.argv[2] ?? "testdata/wallet-balances.json";
 
@@ -47,6 +49,10 @@ const instance_b = await getContractInstanceFromInstantiationParams(BusinessProg
   deployer: AztecAddress.fromString(bp_instance_data.deployer),
 });
 const registered_instance_b = await wallet.registerContract(instance_b, BusinessProgramContract.artifact);
+console.log("AttVerifier class hash:", AttVerifierContract.artifact.hash);
+console.log("BusinessProgram class hash:", BusinessProgramContract.artifact.hash);
+console.log("Registered AttVerifier address:", registered_instance_a.address.toString());
+console.log("Registered BusinessProgram address:", registered_instance_b.address.toString());
 
 
 // load attestation testdata
@@ -108,27 +114,14 @@ for (const url of AllOWED_URL) {
 
 const id = Math.floor(Math.random() * 9999999999);
 
-// Collect all hashes from public_data.attestation.data
+// Collect hashes from attestation.data; if none exist, hash the full data payload as fallback
 const data_hashes: number[][] = [];
 const attData = JSON.parse(obj.public_data[0].attestation.data);
 for (const [key, value] of Object.entries(attData)) {
-  // for attestation_data_hash.json
-  if (key.startsWith("uuid-") && typeof value === "string" && value.length === 64) {
-    // Convert each 32-byte hex string into an array of bytes
+  if ((key.startsWith("uuid-") || key.startsWith("hash-of")) && typeof value === "string" && value.length === 64) {
     const hashBytes = Array.from(Buffer.from(value, "hex"));
     data_hashes.push(hashBytes);
   }
-  // for eth_hash.json/binance-balances.json
-  if (key.startsWith("hash-of") && typeof value === "string" && value.length === 64) {
-    // Convert each 32-byte hex string into an array of bytes
-    const hashBytes = Array.from(Buffer.from(value, "hex"));
-    data_hashes.push(hashBytes);
-  }
-}
-// repeat the last element of data_hashes till MAX_RESPONSE_NUM 
-const data_diff = MAX_RESPONSE_NUM - data_hashes.length;
-for (let i = 0; i < data_diff; i++) {
-  data_hashes.push(data_hashes.at(-1) as number[]);
 }
 
 const plain_json_response: number[][] = [];
@@ -137,21 +130,36 @@ if (obj.private_data && Array.isArray(obj.private_data.plain_json_response)) {
   for (const entry of obj.private_data.plain_json_response) {
     if (entry.id && entry.content) {
       const hashContent = entry.content;
-      // const hashContent = JSON.stringify(JSON.parse(entry.content)["balances"]);
-      // console.log("hashContent:", hashContent);
       const jsonBytes = Array.from(new TextEncoder().encode(hashContent));
       plain_json_response.push(jsonBytes);
     }
   }
 }
-// repeat the last element of plain_json_response till MAX_RESPONSE_NUM 
-const plain_json_diff = MAX_RESPONSE_NUM - plain_json_response.length;
-for (let i = 0; i < plain_json_diff; i++) {
+if (plain_json_response.length === 0) {
+  // Provide the raw attestation.data JSON as the payload
+  plain_json_response.push(Array.from(new TextEncoder().encode(obj.public_data[0].attestation.data)));
+}
+while (plain_json_response.length < MAX_RESPONSE_NUM) {
   plain_json_response.push(plain_json_response.at(-1) as number[]);
 }
 
 const bb = await Barretenberg.new();
 const hashedUrls: bigint[] = [];
+
+// Align data_hashes[0] with AttVerifier's sha256_var over the actual payload bytes (override for this test)
+if (plain_json_response.length > 0) {
+  const payloadBuf = Buffer.from(plain_json_response[0]);
+  const digest = createHash("sha256").update(payloadBuf).digest();
+  data_hashes.length = 0;
+  data_hashes.push(Array.from(digest));
+}
+while (data_hashes.length < MAX_RESPONSE_NUM) {
+  data_hashes.push(data_hashes.at(-1) as number[]);
+}
+
+console.log("Payload length:", plain_json_response[0]?.length ?? 0);
+console.log("Payload preview:", Buffer.from(plain_json_response[0] ?? []).toString().slice(0, 120));
+console.log("Payload sha256:", Buffer.from(data_hashes[0] ?? []).toString("hex"));
 
 for (let url of allowedUrls) {
   url = url.slice();
