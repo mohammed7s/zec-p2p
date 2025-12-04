@@ -11,9 +11,9 @@ pub contract OTCEscrow {
             functions::{initializer, private, public},
             storage::storage
         },
-        messages::message_delivery::MessageDelivery,
         protocol_types::address::AztecAddress,
-        state_vars::PrivateImmutable
+        state_vars::PrivateImmutable,
+        messages::message_delivery::MessageDelivery
     };
     use token_contract::Token;
     use att_verifier::AttVerifier;
@@ -46,7 +46,13 @@ pub contract OTCEscrow {
             revolut_business_logic_address,
         );
 
-        storage.config.initialize(config);
+        // Initialize config note and emit to contract's own address so it can read it later
+        // Using CONSTRAINED_ONCHAIN ensures the contract can reliably access this config
+        storage.config.initialize(config).emit(
+            &mut context,
+            self_address,
+            MessageDelivery.CONSTRAINED_ONCHAIN
+        );
     }
     
     /**
@@ -61,9 +67,10 @@ pub contract OTCEscrow {
         let self_address = context.this_address();
         let caller = context.msg_sender().unwrap();
 
-        // transfer tokens in (public -> private into escrow for simplicity)
+        // Transfer tokens from seller's private balance to escrow's private balance
+        // Token::transfer() uses msg_sender (caller/seller) as 'from' automatically
         Token::at(config.sell_token_address)
-            .transfer_to_private(self_address, config.sell_token_amount)
+            .transfer(self_address, config.sell_token_amount)
             .call(&mut context);
 
         // emit nullifier to prevent multiple deposits

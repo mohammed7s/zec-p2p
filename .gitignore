@@ -1,6 +1,21 @@
+# Dependencies
 **/node_modules
+deps/
+
+# Build outputs
 **/target
 artifacts
 codegenCache.json
-core.*
+
+# Generated bindings (keep .ts, ignore .json artifacts)
+js_test/bindings/*.json
+
+# Deployment artifacts
+js_test/deployed_contract.json
+
+# PXE store
 js_test/store/
+
+# Profiling
+*.svg
+core.*
