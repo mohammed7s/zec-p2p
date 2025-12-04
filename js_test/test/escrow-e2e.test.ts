@@ -153,7 +153,19 @@ describe("zkTLS Escrow E2E Test", () => {
 
         // 2. Seller deposits tokens
         console.log("Seller depositing tokens...");
-        await escrow.methods.deposit_tokens(0n)
+
+        // Generate nonce and create authwit for the escrow to transfer tokens
+        const nonce = Fr.random();
+        const action = token.methods.transfer_in_private(
+            sellerAddress,
+            escrow.address,
+            TOKEN_AMOUNT,
+            nonce
+        );
+        await sellerWallet.createAuthWit(sellerAddress, { caller: escrow.address, action });
+
+        // Now seller can deposit with the authorized nonce
+        await escrow.methods.deposit_tokens(nonce)
             .send({ from: sellerAddress })
             .wait();
 

@@ -35,10 +35,11 @@ pub contract OTCEscrow {
         revolut_business_logic_address: AztecAddress,
     ) {
         let self_address = context.this_address();
+        let deployer = context.msg_sender().unwrap();
 
         // Create config note with zkTLS verification parameters
         let config = ConfigNote::new(
-            self_address,
+            deployer,
             sell_token_address,
             sell_token_amount,
             commitment_hash,
@@ -46,13 +47,11 @@ pub contract OTCEscrow {
             revolut_business_logic_address,
         );
 
-        // Initialize config note and emit to contract's own address so it can read it later
-        // Using CONSTRAINED_ONCHAIN ensures the contract can reliably access this config
-        storage.config.initialize(config).emit(
-            &mut context,
-            self_address,
-            MessageDelivery.CONSTRAINED_ONCHAIN
-        );
+        // Initialize config note and emit to deployer so their PXE stores it
+        storage
+            .config
+            .initialize(config)
+            .emit(&mut context, deployer, MessageDelivery.CONSTRAINED_ONCHAIN);
     }
     
     /**
@@ -67,13 +66,18 @@ pub contract OTCEscrow {
         let self_address = context.this_address();
         let caller = context.msg_sender().unwrap();
 
-        // Transfer tokens from seller's private balance to escrow's private balance
-        // Token::transfer() uses msg_sender (caller/seller) as 'from' automatically
+        // Transfer tokens FROM seller TO escrow using authwit
+        // The seller must have pre-authorized this transfer via authwit
         Token::at(config.sell_token_address)
-            .transfer(self_address, config.sell_token_amount)
+            .transfer_in_private(
+                caller,          // from: seller
+                self_address,    // to: escrow contract
+                config.sell_token_amount,
+                _nonce           // authwit nonce for authorization
+            )
             .call(&mut context);
 
-        // emit nullifier to prevent multiple deposits
+        // Emit nullifier to prevent multiple deposits
         let deposit_nullifier = config.get_nullifier(true);
         context.push_nullifier(deposit_nullifier);
     }
