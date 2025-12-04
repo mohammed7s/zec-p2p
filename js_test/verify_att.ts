@@ -10,8 +10,11 @@ import { getPXEConfig } from "@aztec/pxe/server";
 import { Fr as aztec_fr } from "@aztec/aztec.js/fields";
 import { BusinessProgramContract } from "./bindings/BusinessProgram.js";
 import { performance } from "perf_hooks";
-import { AztecAddress, createAztecNodeClient, getContractInstanceFromInstantiationParams, getDecodedPublicEvents } from "@aztec/aztec.js";
-import { Barretenberg, Fr } from "@aztec/bb.js";
+import { AztecAddress } from "@aztec/aztec.js/addresses";
+import { getContractInstanceFromInstantiationParams } from "@aztec/aztec.js/contracts";
+import { getDecodedPublicEvents } from "@aztec/aztec.js/events";
+import { createAztecNodeClient } from "@aztec/aztec.js/node";
+import { poseidon2Hash } from "@aztec/foundation/crypto";
 import { createHash } from "crypto";
 
 
@@ -143,7 +146,6 @@ while (plain_json_response.length < MAX_RESPONSE_NUM) {
   plain_json_response.push(plain_json_response.at(-1) as number[]);
 }
 
-const bb = await Barretenberg.new();
 const hashedUrls: bigint[] = [];
 
 // Align data_hashes[0] with AttVerifier's sha256_var over the actual payload bytes (override for this test)
@@ -168,11 +170,12 @@ for (let url of allowedUrls) {
     url.push(0);
   }
 
-  const frArray = url.map(b => new Fr(BigInt(b)));
-  const hashFr = await bb.poseidon2Hash(frArray);
-  const hashBigInt = BigInt(hashFr.toString());
+  const frArray = url.map(b => BigInt(b));
+  const hashFr = await poseidon2Hash(frArray);
+  const hashBigInt = hashFr.toBigInt ? hashFr.toBigInt() : BigInt(hashFr.toString());
   hashedUrls.push(hashBigInt);
 }
+console.log("Verify hashedUrls:", hashedUrls.map(h => "0x" + h.toString(16)));
 
 console.log("start verify");
 const start = performance.now();
@@ -216,4 +219,3 @@ try {
     console.log("verify_attestation failed:", err)
   }
 }
-await bb.destroy()

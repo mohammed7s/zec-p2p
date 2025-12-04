@@ -6,7 +6,7 @@ pub contract AttVerifier {
 
     use aztec::{
         event::event_emission::emit_event_in_public,
-        macros::{events::event, functions::{internal, private, public}},
+        macros::{events::event, functions::{external, internal, initializer}},
         protocol_types::{address::AztecAddress, hash::poseidon2_hash},
     };
     use business_program::BusinessProgram;
@@ -26,7 +26,7 @@ pub contract AttVerifier {
     }
 
     // Opcode count: 71055, Total gates by opcodes: 546716, Circuit size: 550.167
-    #[private]
+    #[external("private")]
     fn verify_attestation(
         public_key_x: [u8; 32],
         public_key_y: [u8; 32],
@@ -96,7 +96,7 @@ pub contract AttVerifier {
         result
     }
 
-    #[public]
+    #[external("public")]
     #[internal]
     fn _emit_success_event(
         sender: AztecAddress,

@@ -3,9 +3,9 @@ import { AttVerifierContract } from "./bindings/AttVerifier.js";
 import { getInitialTestAccountsData } from "@aztec/accounts/testing";
 import { TestWallet } from "@aztec/test-wallet/server";
 import { BusinessProgramContract } from "./bindings/BusinessProgram.js";
-import { createAztecNodeClient } from "@aztec/aztec.js";
-import { Barretenberg, Fr } from "@aztec/bb.js";
+import { createAztecNodeClient } from "@aztec/aztec.js/node";
 import { getPXEConfig } from "@aztec/pxe/server";
+import { poseidon2Hash } from "@aztec/foundation/crypto";
 
 
 // Allow Revolut transactions endpoint for this run
@@ -31,7 +31,6 @@ for (const url of AllOWED_URL) {
   const url_bytes = Array.from(new TextEncoder().encode(url));
   allowedUrls.push(url_bytes)
 }
-const bb = await Barretenberg.new();
 const hashedUrls: bigint[] = [];
 for (let url of allowedUrls) {
   url = url.slice();
@@ -40,11 +39,12 @@ for (let url of allowedUrls) {
     url.push(0);
   }
 
-  const frArray = url.map(b => new Fr(BigInt(b)));
-  const hashFr = await bb.poseidon2Hash(frArray);
-  const hashBigInt = BigInt(hashFr.toString());
+  const frArray = url.map(b => BigInt(b));
+  const hashFr = await poseidon2Hash(frArray);
+  const hashBigInt = hashFr.toBigInt ? hashFr.toBigInt() : BigInt(hashFr.toString());
   hashedUrls.push(hashBigInt);
 }
+console.log("Deploy hashedUrls:", hashedUrls.map(h => "0x" + h.toString(16)));
 
 // deploy business program
 const businessProgram = await BusinessProgramContract.deploy(wallet, alice.address, hashedUrls)
@@ -68,4 +68,3 @@ const instanceInfos = {
 const json = JSON.stringify(instanceInfos, null, 2);
 fs.writeFileSync("deployed_contract.json", json, "utf-8");
 console.log("Saved to eployed_contract.json");
-await bb.destroy();

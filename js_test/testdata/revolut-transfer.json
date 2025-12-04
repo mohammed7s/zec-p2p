@@ -1,0 +1,30 @@
+{
+  "recipient": "0xB12a1f7035FdCBB4cC5Fa102C01346BD45439Adf",
+  "request": {
+    "url": "https://app.revolut.com/api/retail/user/current/transactions/last?count=20&internalPocketId=24e2e5ad-b4f4-4d3b-ac68-0dbd75e021d1",
+    "header": "",
+    "method": "GET",
+    "body": ""
+  },
+  "reponseResolve": [
+    { "keyName": "currency", "parseType": "", "parsePath": "$[0].currency" },
+    { "keyName": "amount", "parseType": "", "parsePath": "$[0].amount" },
+    { "keyName": "username", "parseType": "", "parsePath": "$[0].recipient.username" },
+    { "keyName": "state", "parseType": "", "parsePath": "$[0].state" },
+    { "keyName": "type", "parseType": "", "parsePath": "$[0].type" },
+    { "keyName": "completedDate", "parseType": "", "parsePath": "$[0].completedDate" },
+    { "keyName": "id", "parseType": "", "parsePath": "$[0].id" }
+  ],
+  "data": "{\"amount\":\"-10\",\"completedDate.count\":\"1\",\"type.count\":\"1\",\"state.count\":\"1\",\"username.count\":\"1\",\"id.count\":\"1\",\"type\":\"TRANSFER\",\"completedDate\":\"1764678830697\",\"amount.count\":\"1\",\"currency\":\"GBP\",\"currency.count\":\"1\",\"id\":\"692edcae-8385-a702-8dde-7452105e2321\",\"state\":\"COMPLETED\",\"username\":\"optimapqfu\"}",
+  "attConditions": "[{\"op\":\"REVEAL_STRING\",\"field\":\"$[0].currency\"},{\"op\":\"REVEAL_STRING\",\"field\":\"$[0].amount\"},{\"op\":\"REVEAL_STRING\",\"field\":\"$[0].recipient.username\"},{\"op\":\"REVEAL_STRING\",\"field\":\"$[0].state\"},{\"op\":\"REVEAL_STRING\",\"field\":\"$[0].type\"},{\"op\":\"REVEAL_STRING\",\"field\":\"$[0].completedDate\"},{\"op\":\"REVEAL_STRING\",\"field\":\"$[0].id\"}]",
+  "timestamp": 1764678899156,
+  "additionParams": "{\"algorithmType\":\"proxytls\"}",
+  "attestors": [
+    { "attestorAddr": "0xdb736b13e2f522dbe18b2015d0291e4b193d8ef6", "url": "https://primuslabs.xyz" }
+  ],
+  "signatures": [
+    "0xe3d8234df0738a580a02320b38ce56e839a09801dbc8432db436d9c28b3350d52bf660eabe4d45d6cd6d7e893cc5a78b1725b412a251a6291c7d85c7e499f5811b"
+  ],
+  "extendedData": "{\"amount\":\"-10\",\"amount.count\":\"1\",\"completedDate\":\"1764678830697\",\"completedDate.count\":\"1\",\"currency\":\"GBP\",\"currency.count\":\"1\",\"id\":\"692edcae-8385-a702-8dde-7452105e2321\",\"id.count\":\"1\",\"state\":\"COMPLETED\",\"state.count\":\"1\",\"type\":\"TRANSFER\",\"type.count\":\"1\",\"username\":\"optimapqfu\",\"username.count\":\"1\"}",
+  "allJsonResponse": []
+}

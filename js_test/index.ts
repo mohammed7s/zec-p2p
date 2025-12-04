@@ -11,14 +11,16 @@ import { createStore } from "@aztec/kv-store/lmdb";
 import { createPXE, getPXEConfig, PXE } from "@aztec/pxe/server";
 import { BusinessProgramContract } from "./bindings/BusinessProgram.js";
 import { performance } from "perf_hooks";
-import { createAztecNodeClient, getDecodedPublicEvents } from "@aztec/aztec.js";
-import { Barretenberg, Fr } from "@aztec/bb.js";
+import { getDecodedPublicEvents } from "@aztec/aztec.js/events";
+import { createAztecNodeClient } from "@aztec/aztec.js/node";
+import { poseidon2Hash } from "@aztec/foundation/crypto";
 import { url } from "inspector";
 import { error } from "console";
+import { createHash } from "crypto";
 
 
 const MAX_RESPONSE_NUM = 1;
-const AllOWED_URL = ["https://api.binance.com/sapi/v1/asset/wallet/balance"];
+const AllOWED_URL = ["https://app.revolut.com/api/retail/user/current/transactions/last?count=20&internalPocketId=24e2e5ad-b4f4-4d3b-ac68-0dbd75e021d1"];
 // const ATT_PATH = process.argv[2] ?? "testdata/eth_hash.json";
 const ATT_PATH = process.argv[2] ?? "testdata/wallet-balances.json";
 
@@ -130,13 +132,27 @@ if (obj.private_data && Array.isArray(obj.private_data.plain_json_response)) {
     }
   }
 }
-// repeat the last element of plain_json_response till MAX_RESPONSE_NUM 
+// repeat the last element of plain_json_response till MAX_RESPONSE_NUM
 const plain_json_diff = MAX_RESPONSE_NUM - plain_json_response.length;
 for (let i = 0; i < plain_json_diff; i++) {
   plain_json_response.push(plain_json_response.at(-1) as number[]);
 }
 
-const bb = await Barretenberg.new();
+// Align data_hashes[0] with AttVerifier's sha256_var over the actual payload bytes (override for this test)
+if (plain_json_response.length > 0) {
+  const payloadBuf = Buffer.from(plain_json_response[0]);
+  const digest = createHash("sha256").update(payloadBuf).digest();
+  data_hashes.length = 0;
+  data_hashes.push(Array.from(digest));
+}
+while (data_hashes.length < MAX_RESPONSE_NUM) {
+  data_hashes.push(data_hashes.at(-1) as number[]);
+}
+
+console.log("Payload length:", plain_json_response[0]?.length ?? 0);
+console.log("Payload preview:", Buffer.from(plain_json_response[0] ?? []).toString().slice(0, 120));
+console.log("Payload sha256:", Buffer.from(data_hashes[0] ?? []).toString("hex"));
+
 const hashedUrls: bigint[] = [];
 
 for (let url of allowedUrls) {
@@ -146,9 +162,9 @@ for (let url of allowedUrls) {
     url.push(0);
   }
 
-  const frArray = url.map(b => new Fr(BigInt(b)));
-  const hashFr = await bb.poseidon2Hash(frArray);
-  const hashBigInt = BigInt(hashFr.toString());
+  const frArray = url.map(b => BigInt(b));
+  const hashFr = await poseidon2Hash(frArray);
+  const hashBigInt = hashFr.toBigInt ? hashFr.toBigInt() : BigInt(hashFr.toString());
   hashedUrls.push(hashBigInt);
 }
 
