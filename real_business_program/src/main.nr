@@ -3,7 +3,7 @@ use dep::json_parser::JSON2kb;
 #[aztec]
 pub contract BusinessProgram {
     use dep::json_parser::JSON2kb;
-    use aztec::macros::functions::{external, initializer};
+    use aztec::macros::functions::{initializer, private, public};
     use aztec::macros::storage::storage;
     use aztec::protocol_types::{address::AztecAddress, hash::poseidon2_hash};
     use aztec::state_vars::{public_immutable::PublicImmutable, public_mutable::PublicMutable};
@@ -23,13 +23,13 @@ pub contract BusinessProgram {
         allowed_url_hashes: PublicMutable<[Field; 1], Context>,
     }
 
-    #[external("public")]
+    #[public]
     fn set_admin(new_admin: AztecAddress) {
         assert(storage.admin.read().eq(context.msg_sender().unwrap()), "caller is not admin");
         storage.admin.write(new_admin);
     }
 
-    #[external("public")]
+    #[public]
     #[initializer]
     fn constructor(admin: AztecAddress, allowed_url_hashes: [Field; 1]) {
         assert(!admin.is_zero(), "invalid admin");
@@ -38,13 +38,13 @@ pub contract BusinessProgram {
     }
 
     // TODO - allow update single url with index?
-    #[external("public")]
+    #[public]
     fn update_allowed_url_hashes(allowed_url_hashes: [Field; 1]) {
         assert(storage.admin.read().eq(context.msg_sender().unwrap()), "caller is not admin");
         storage.allowed_url_hashes.write(allowed_url_hashes);
     }
 
-    #[external("public")]
+    #[public]
     fn check_allowed_url(allowed_url_matches_hashes: [Field; 1]) {
         let allowed_url_hashes: [Field; 1] = storage.allowed_url_hashes.read();
         for i in 0..1 {
@@ -59,7 +59,7 @@ pub contract BusinessProgram {
         }
     }
 
-    #[external("private")]
+    #[private]
     fn verify(
         plain_json_response: [BoundedVec<u8, MAX_CONTENT_LEN>; 1],
         allowed_url_matches_hashes: [Field; 1],

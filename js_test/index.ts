@@ -11,15 +11,13 @@ import { createStore } from "@aztec/kv-store/lmdb";
 import { createPXE, getPXEConfig, PXE } from "@aztec/pxe/server";
 import { BusinessProgramContract } from "./bindings/BusinessProgram.js";
 import { performance } from "perf_hooks";
-import { getDecodedPublicEvents } from "@aztec/aztec.js/events";
-import { createAztecNodeClient } from "@aztec/aztec.js/node";
-import { poseidon2Hash } from "@aztec/foundation/crypto";
-import { url } from "inspector";
-import { error } from "console";
+import { createAztecNodeClient, getDecodedPublicEvents } from "@aztec/aztec.js";
+import { Barretenberg, Fr } from "@aztec/bb.js";
 import { createHash } from "crypto";
 
 
 const MAX_RESPONSE_NUM = 1;
+// Allowed URL(s) for matching request; set to Revolut endpoint for this test case
 const AllOWED_URL = ["https://app.revolut.com/api/retail/user/current/transactions/last?count=20&internalPocketId=24e2e5ad-b4f4-4d3b-ac68-0dbd75e021d1"];
 // const ATT_PATH = process.argv[2] ?? "testdata/eth_hash.json";
 const ATT_PATH = process.argv[2] ?? "testdata/wallet-balances.json";
@@ -113,12 +111,6 @@ for (const [key, value] of Object.entries(attData)) {
     data_hashes.push(hashBytes);
   }
 }
-// repeat the last element of data_hashes till MAX_RESPONSE_NUM 
-const data_diff = MAX_RESPONSE_NUM - data_hashes.length;
-for (let i = 0; i < data_diff; i++) {
-  data_hashes.push(data_hashes.at(-1) as number[]);
-}
-
 const plain_json_response: number[][] = [];
 
 if (obj.private_data && Array.isArray(obj.private_data.plain_json_response)) {
@@ -132,13 +124,16 @@ if (obj.private_data && Array.isArray(obj.private_data.plain_json_response)) {
     }
   }
 }
+// If no plain_json_response from private_data, use raw attestation.data as fallback
+if (plain_json_response.length === 0) {
+  plain_json_response.push(Array.from(new TextEncoder().encode(obj.public_data[0].attestation.data)));
+}
 // repeat the last element of plain_json_response till MAX_RESPONSE_NUM
-const plain_json_diff = MAX_RESPONSE_NUM - plain_json_response.length;
-for (let i = 0; i < plain_json_diff; i++) {
+while (plain_json_response.length < MAX_RESPONSE_NUM) {
   plain_json_response.push(plain_json_response.at(-1) as number[]);
 }
 
-// Align data_hashes[0] with AttVerifier's sha256_var over the actual payload bytes (override for this test)
+// Align data_hashes with AttVerifier's sha256_var over the actual payload bytes
 if (plain_json_response.length > 0) {
   const payloadBuf = Buffer.from(plain_json_response[0]);
   const digest = createHash("sha256").update(payloadBuf).digest();
@@ -153,6 +148,7 @@ console.log("Payload length:", plain_json_response[0]?.length ?? 0);
 console.log("Payload preview:", Buffer.from(plain_json_response[0] ?? []).toString().slice(0, 120));
 console.log("Payload sha256:", Buffer.from(data_hashes[0] ?? []).toString("hex"));
 
+const bb = await Barretenberg.new();
 const hashedUrls: bigint[] = [];
 
 for (let url of allowedUrls) {
@@ -162,9 +158,9 @@ for (let url of allowedUrls) {
     url.push(0);
   }
 
-  const frArray = url.map(b => BigInt(b));
-  const hashFr = await poseidon2Hash(frArray);
-  const hashBigInt = hashFr.toBigInt ? hashFr.toBigInt() : BigInt(hashFr.toString());
+  const frArray = url.map(b => new Fr(BigInt(b)));
+  const hashFr = await bb.poseidon2Hash(frArray);
+  const hashBigInt = BigInt(hashFr.toString());
   hashedUrls.push(hashBigInt);
 }
 

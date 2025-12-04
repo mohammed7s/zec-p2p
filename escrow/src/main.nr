@@ -8,7 +8,7 @@ pub contract OTCEscrow {
     // imports
     use aztec::{
         macros::{
-            functions::{initializer, external},
+            functions::{initializer, private, public},
             storage::storage
         },
         messages::message_delivery::MessageDelivery,
@@ -16,6 +16,8 @@ pub contract OTCEscrow {
         state_vars::PrivateImmutable
     };
     use token_contract::Token;
+    use att_verifier::AttVerifier;
+    use real_business_program::BusinessProgram;
     use crate::types::config_note::ConfigNote;
 
     #[storage]
@@ -23,7 +25,7 @@ pub contract OTCEscrow {
         config: PrivateImmutable<ConfigNote, Context>,
     }
     
-    #[external("private")]
+    #[private]
     #[initializer]
     fn constructor(
         sell_token_address: AztecAddress,
@@ -44,9 +46,7 @@ pub contract OTCEscrow {
             revolut_business_logic_address,
         );
 
-        storage.config
-            .initialize(config)
-            .emit(self_address, MessageDelivery.CONSTRAINED_ONCHAIN);
+        storage.config.initialize(config);
     }
     
     /**
@@ -55,20 +55,15 @@ pub contract OTCEscrow {
      * @param _nonce - authwit nonce used in `transfer_private_to_private`
      * @return - the commitment for the partial note
      */
-    #[external("private")]
+    #[private]
     fn deposit_tokens(_nonce: Field) {
         let config = storage.config.get_note();
         let self_address = context.this_address();
         let caller = context.msg_sender().unwrap();
 
-        // transfer tokens in
+        // transfer tokens in (public -> private into escrow for simplicity)
         Token::at(config.sell_token_address)
-            .transfer_private_to_private(
-                caller,
-                self_address,
-                config.sell_token_amount,
-                _nonce
-            )
+            .transfer_to_private(self_address, config.sell_token_amount)
             .call(&mut context);
 
         // emit nullifier to prevent multiple deposits
@@ -78,8 +73,8 @@ pub contract OTCEscrow {
 
     // TODO: Add fulfill_with_attestation function here
 
-    #[external("utility")]
-    unconstrained fn get_config() -> ConfigNote {
-        storage.config.view_note()
+    #[private]
+    fn get_config() -> ConfigNote {
+        storage.config.get_note()
     }
 }
