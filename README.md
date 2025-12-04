@@ -4,7 +4,7 @@
 
 ## Overview
 
-**zec-p2p** enables Zcash (ZEC) holders to trustlessly sell their holdings to fiat buyers who pay via Revolut. The system uses zkTLS (zero-knowledge Transport Layer Security) to cryptographically prove off-chain fiat payments, eliminating counterparty risk in P2P crypto-to-fiat exchanges.
+**zec-p2p** enables Zcash (ZEC) holders to trustlessly sell their holdings to fiat buyers who pay via Revolut. The system uses [primus-zkTLS](https://docs.primuslabs.xyz/data-verification/tech-intro/) to cryptographically prove off-chain fiat payments, eliminating counterparty risk in P2P crypto-to-fiat exchanges.
 
 ### Key Features
 
@@ -28,17 +28,9 @@
                                                                                   ▼
                                                                           ┌──────────────┐
                                                                           │   Revolut    │
-                                                                          │     API      │
+                                                                          │    UI        │
                                                                           └──────────────┘
 ```
-
-### Components
-
-1. **Bridge Token**: ZEC is bridged to Aztec Network as a wrapped token
-2. **Escrow Contract** (`nr/escrow/`): Holds bridged tokens until payment proof is verified
-3. **zkTLS Verifier** (`nr/att_verifier/`): Validates TLS session attestations
-4. **Business Logic** (`nr/real_business_program/`): Parses and verifies Revolut transaction data
-5. **Commitment Hash**: Binds escrow to specific payment details (amount, currency, recipient)
 
 ## User Flow
 
@@ -65,13 +57,22 @@
    - Transaction details (amount, username, tx ID)
 5. **Receive Tokens**: Escrowed tokens automatically transferred upon proof verification
 
+### Components
+
+1. **Bridge Token**: ZEC is bridged to Aztec Network as a wrapped token
+2. **Escrow Contract** (`nr/escrow/`): Holds bridged tokens until payment proof is verified
+3. **zkTLS Verifier** (`nr/att_verifier/`): Validates TLS session attestations
+4. **Business Logic** (`nr/real_business_program/`): Parses and verifies Revolut transaction data. Could add other payment methods here. 
+5. **Commitment Hash**: Binds escrow to specific payment details (amount, currency, recipient, txid)
+
+
 ## Technical Details
 
 ### zkTLS Attestation Flow
 
 ```
 1. Buyer makes Revolut payment (off-chain)
-2. Buyer intercepts TLS handshake with Revolut API
+2. Buyer uses primus-zktls extension to notarize the revolut https request returning a tx list
 3. Generate attestation:
    - TLS session signature
    - Server public key
@@ -119,6 +120,10 @@ zec-p2p/
 │   ├── deploy.ts                   # Contract deployment script
 │   └── verify_att.ts               # Standalone attestation verification
 │
+├── primus-attestation-frontend/    # Demo FE/BE to capture Revolut attestations (from primus-labs/zktls-demo)
+│   ├── client/                     # Vite React app (Primus zkTLS JS SDK)
+│   └── server/                     # Signing server for attestation requests
+│
 ├── scripts/                         # Build automation
 │   ├── build-all.sh                # Compile all contracts & generate bindings
 │   ├── build-token.sh              # Build Aztec Token contract
@@ -127,68 +132,20 @@ zec-p2p/
 └── deps/                            # Build dependencies (gitignored)
 ```
 
-## Prerequisites
+## Prerequisite
 
-- **Node.js** 18+ and Yarn
-- **Aztec Sandbox** or access to Aztec devnet
-- **Aztec CLI Tools**:
-  ```bash
-  npm install -g @aztec/cli
-  ```
-- **Noir Compiler** (aztec-nargo):
-  ```bash
-  # Installed with Aztec CLI
-  aztec-nargo --version  # Should be v3.0.0-nightly.20251016
-  ```
+- Aztec CLI/sandbox matching `v3.0.0-nightly.20251016` (installs aztec-nargo)
 
-## Installation
+## Install & Build
 
 ```bash
-# Clone repository
-git clone <repository-url>
-cd aztec-demo
-
-# Install dependencies
+# JS deps
 cd js_test
 yarn install
-```
 
-## Building Contracts
-
-### Build All Contracts
-
-```bash
-# From project root
-./scripts/build-all.sh
-```
-
-This compiles:
-- AttVerifier
-- RealBusinessProgram (Revolut)
-- OTCEscrow
-
-And generates TypeScript bindings in `js_test/bindings/`.
-
-### Build Token Contract
-
-```bash
-./scripts/build-token.sh
-```
-
-Clones Aztec packages and compiles the standard Token contract.
-
-### Manual Build
-
-```bash
-# Compile individual contract
-cd nr/escrow
-aztec-nargo compile
-
-# Post-process (from root)
-aztec-postprocess-contract
-
-# Generate bindings
-aztec codegen nr/escrow/target/otc_escrow-OTCEscrow.json -o js_test/bindings
+# From project root, build contracts + bindings
+./scripts/build-all.sh      # AttVerifier, BusinessProgram, Escrow
+./scripts/build-token.sh    # Token bindings
 ```
 
 ## Running Tests
@@ -202,55 +159,28 @@ cd js_test
 yarn test:e2e
 ```
 
-**Test Flow:**
-1. Deploy Token, AttVerifier, BusinessProgram, Escrow
-2. Mint tokens to seller
-3. Seller deposits tokens into escrow
-4. Buyer submits zkTLS proof of Revolut payment
-5. Verify tokens transferred to buyer
+### Generating Your Own Revolut Attestation (Primus zkTLS frontend)
 
-**Test Data:**
-- Amount: -10 GBP (negative = outgoing from seller)
-- Revolut username: `optimapqfu`
-- Transaction ID: `692edcae-8385-a702-8dde-7452105e2321`
-
-### Standalone Attestation Verification
+A demo frontend/backend (`primus-attestation-frontend/`, copied from https://github.com/primus-labs/zktls-demo) can capture Revolut attestations:
 
 ```bash
-cd js_test
-yarn verify_att
+# Terminal 1: start the signing server
+cd primus-attestation-frontend/server
+npm install
+node index.js
+
+# Terminal 2: start the client
+cd primus-attestation-frontend/client
+npm install
+npm run dev
 ```
 
-Tests zkTLS signature verification and JSON parsing without escrow.
+Open the client in your browser, run the flow, and copy the attestation object printed in the console. Save it to `js_test/testdata/your-attestation.json` (matching the structure of the existing Revolut example) and point your verifier/test to that file.
 
-## Development
-
-### Modifying Business Logic
-
-To support different payment providers:
-
-1. Copy `nr/real_business_program/` to `nr/<provider>_business_program/`
-2. Update `verify()` function to parse provider's API response format
-3. Compute commitment hash from extracted fields
-4. Update escrow to reference new business program address
-
-### Adding Payment Fields
-
-Edit commitment hash in:
-- `nr/real_business_program/src/main.nr` (Noir)
-- `js_test/lib/commitment.ts` (TypeScript)
-
-Both must compute identical hashes.
-
-### Testing with Real Attestations
-
-1. Capture TLS session with Revolut API
-2. Save to `js_test/testdata/`
-3. Update test to use new attestation file
 
 ## Acknowledgments & Inspiration
 
-This project builds upon pioneering work in zkTLS and decentralized finance:
+This project builds upon pioneering work:
 
 - **[zkp2p.xyz](https://zkp2p.xyz)**: Inspiration for trustless fiat on/off-ramping using payment proofs
 - **[Primus zkTLS](https://github.com/Envoy-VC/primus-zktls)**: Reference implementation for TLS attestation verification on Aztec
@@ -260,23 +190,12 @@ This project builds upon pioneering work in zkTLS and decentralized finance:
 
 ⚠️ **Experimental Software**: This is a proof-of-concept. Do not use with mainnet funds.
 
-**Known Limitations:**
-- No slashing mechanism for seller misbehavior
-- Relies on Revolut API stability
-- zkTLS session capture requires specialized tooling
-- Bridge security depends on ZEC↔Aztec bridge implementation
+
 
 ## License
 
 MIT
 
-## Contributing
-
-Contributions welcome! Areas for improvement:
-- Support for additional payment providers (Venmo, PayPal, Wise)
-- Mobile-friendly zkTLS capture tools
-- Dispute resolution mechanisms
-- Enhanced privacy features
 
 ---
 

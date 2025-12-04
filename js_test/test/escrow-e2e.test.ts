@@ -155,7 +155,7 @@ describe("zkTLS Escrow E2E Test", () => {
         console.log("Seller depositing tokens...");
 
         // Generate nonce and create authwit for the escrow to transfer tokens
-        const nonce = Fr.random();
+        const nonce = BigInt(Date.now()) * 1000000n + BigInt(Math.floor(Math.random() * 1000000));
         const action = token.methods.transfer_in_private(
             sellerAddress,
             escrow.address,
