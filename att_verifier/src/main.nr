@@ -38,7 +38,7 @@ pub contract AttVerifier {
         plain_json_response_contents: [BoundedVec<u8, MAX_CONTENT_LEN>; 1],
         business_logic_address: AztecAddress,
         id: Field, // id for this attestation
-    ) -> bool {
+    ) -> Field {
         // 1. Check signature
         assert(std::ecdsa_secp256k1::verify_signature(public_key_x, public_key_y, signature, hash));
 
@@ -78,11 +78,13 @@ pub contract AttVerifier {
             assert(hash == data_hashes[i]);
         }
 
-        let result = BusinessProgram::at(business_logic_address)
+        // Call business program and get commitment hash
+        let commitment_hash = BusinessProgram::at(business_logic_address)
             .verify(plain_json_response_contents, allowed_url_matches)
             .call(&mut context);
 
-        if result {
+        // Emit success event if commitment hash is valid (non-zero)
+        if commitment_hash != 0 {
             AttVerifier::at(context.this_address())
                 ._emit_success_event(
                     context.msg_sender().unwrap(),
@@ -93,7 +95,7 @@ pub contract AttVerifier {
                 .enqueue(&mut context);
         }
 
-        result
+        commitment_hash
     }
 
     #[public]

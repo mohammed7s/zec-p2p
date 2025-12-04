@@ -63,8 +63,10 @@ pub contract BusinessProgram {
     fn verify(
         plain_json_response: [BoundedVec<u8, MAX_CONTENT_LEN>; 1],
         allowed_url_matches_hashes: [Field; 1],
-    ) -> bool {
+    ) -> Field {
         // Revolut transaction verification: parse all required fields and validate transaction state
+        let mut commitment_hash: Field = 0;
+
         for i in 0..1 {
             let sanitized = unsafe { sanitize_ascii(plain_json_response[i]) };
             let parsed = JSON2kb::parse_bounded_vec_json(sanitized);
@@ -108,13 +110,22 @@ pub contract BusinessProgram {
 
             assert(state == expected_state, "transaction not completed");
             assert(tx_type == expected_type, "must be a transfer");
+
+            // Compute commitment hash from transaction details
+            // Hash each field separately, then hash the hashes together
+            let amount_hash = hash_bounded_vec(amount);
+            let currency_hash = hash_bounded_vec(currency);
+            let username_hash = hash_bounded_vec(username);
+            let tx_id_hash = hash_bounded_vec(tx_id);
+
+            commitment_hash = poseidon2_hash([amount_hash, currency_hash, username_hash, tx_id_hash]);
         }
 
         BusinessProgram::at(context.this_address())
             .check_allowed_url(allowed_url_matches_hashes)
             .enqueue(&mut context);
 
-        true
+        commitment_hash
     }
 
     #[contract_library_method]
@@ -211,6 +222,20 @@ pub contract BusinessProgram {
                 assert((b == s) | (s == 63));
             }
         }
+    }
+
+    // Helper function to hash a BoundedVec<u8, N> into a single Field
+    #[contract_library_method]
+    fn hash_bounded_vec<let N: u32>(vec: BoundedVec<u8, N>) -> Field {
+        // Convert bytes to Field array and hash
+        let mut fields: [Field; 64] = [0; 64]; // Max 64 bytes (covers up to BoundedVec<u8, 64>)
+        let len = vec.len();
+        for i in 0..64 {
+            if i < len {
+                fields[i] = vec.get(i) as Field;
+            }
+        }
+        poseidon2_hash(fields)
     }
 
 }
