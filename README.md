@@ -1,6 +1,6 @@
-# zec-p2p
+# Zec-p2p
 
-> Trustless peer-to-peer ZEC/fiat exchange using zkTLS attestations on Aztec Network
+> Trustless peer-to-peer ZEC-fiat offramp exchange using zkTLS attestations of Revolut payment (using Aztec Network) 
 
 ## Overview
 
