@@ -72,7 +72,7 @@ const TX_CURRENCY = "GBP";
 const TX_USERNAME = "optimapqfu";
 const TX_ID = "692edcae-8385-a702-8dde-7452105e2321";
 
-const TOKEN_AMOUNT = 1000n * 1000000n; // 1000 USDC (6 decimals)
+const TOKEN_AMOUNT = 1000n * 1000000n; // 1000 ZEC (6 decimals)
 
 describe("zkTLS Escrow E2E Test", () => {
     let node: AztecNode;
@@ -121,14 +121,14 @@ describe("zkTLS Escrow E2E Test", () => {
         console.log("Commitment hash:", "0x" + commitmentHash.toString(16));
 
         // Deploy Token
-        console.log("Deploying Token...");
-        token = await TokenContract.deploy(sellerWallet, sellerAddress, "USDC", "USDC", 6)
+        console.log("Deploying ZEC Token...");
+        token = await TokenContract.deploy(sellerWallet, sellerAddress, "ZEC", "ZEC", 6)
             .send({ from: sellerAddress })
             .deployed();
-        console.log("Token deployed:", token.address.toString());
+        console.log("ZEC Token deployed:", token.address.toString());
 
         // Mint tokens to seller
-        console.log("Minting tokens to seller...");
+        console.log("Minting ZEC to seller...");
         await token.methods.mint_to_private(sellerAddress, TOKEN_AMOUNT)
             .send({ from: sellerAddress })
             .wait();
