@@ -111,7 +111,7 @@ describe("zkTLS Escrow E2E Test", () => {
         console.log("Seller:", sellerAddress.toString());
         console.log("Buyer:", buyerAddress.toString());
 
-        // Register accounts with each other
+        // Register accounts with each other (following OTC desk pattern)
         await sellerWallet.registerSender(buyerAddress);
         await buyerWallet.registerSender(sellerAddress);
 
@@ -286,10 +286,10 @@ describe("zkTLS Escrow E2E Test", () => {
             .send({ from: buyerAddress })
             .wait();
 
-        // 6. Verify final balances
+        // 6. Verify final balances (using withWallet like OTC desk)
         console.log("\n=== Verifying Final Balances ===");
-        const buyerBalanceFinal = await token.methods.balance_of_private(buyerAddress).simulate({ from: buyerAddress });
-        const escrowBalanceFinal = await token.methods.balance_of_private(escrow.address).simulate({ from: buyerAddress });
+        const buyerBalanceFinal = await token.withWallet(buyerWallet).methods.balance_of_private(buyerAddress).simulate({ from: buyerAddress });
+        const escrowBalanceFinal = await token.withWallet(sellerWallet).methods.balance_of_private(escrow.address).simulate({ from: sellerAddress });
 
         console.log("Buyer final balance:", buyerBalanceFinal);
         console.log("Escrow final balance:", escrowBalanceFinal);

@@ -38,8 +38,10 @@ pub contract OTCEscrow {
         let deployer = context.msg_sender().unwrap();
 
         // Create config note with zkTLS verification parameters
+        // Set owner to escrow address so buyer's PXE doesn't need seller's public keys
+        // We can add a separate seller_address field later for refund functionality
         let config = ConfigNote::new(
-            deployer,
+            self_address,  // owner = escrow contract
             sell_token_address,
             sell_token_amount,
             commitment_hash,
@@ -47,11 +49,13 @@ pub contract OTCEscrow {
             revolut_business_logic_address,
         );
 
-        // Initialize config note and emit to deployer so their PXE stores it
+        // Initialize config note and emit to escrow contract address
+        // This encrypts the note using the escrow's keys, allowing anyone with the
+        // escrow's secret key (seller & buyer) to decrypt and read it
         storage
             .config
             .initialize(config)
-            .emit(&mut context, deployer, MessageDelivery.CONSTRAINED_ONCHAIN);
+            .emit(&mut context, self_address, MessageDelivery.CONSTRAINED_ONCHAIN);
     }
     
     /**

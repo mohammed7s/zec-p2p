@@ -11,6 +11,7 @@
     "@aztec/noir-contracts.js": "3.0.0-nightly.20251016",
     "@aztec/pxe": "3.0.0-nightly.20251016",
     "@aztec/test-wallet": "3.0.0-nightly.20251016",
+    "@aztec/stdlib": "3.0.0-nightly.20251016",
     "@noble/secp256k1": "^3.0.0",
     "@types/node": "^24.7.0",
     "tsx": "^4.20.6",

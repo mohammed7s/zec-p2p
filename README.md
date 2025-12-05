@@ -198,7 +198,9 @@ This project builds upon pioneering work:
 
 ⚠️ **Experimental Software**: This is a proof-of-concept. Do not use with mainnet funds.
 
+## Known Limitations / TODOs
 
+- No seller cancel/refund path yet; once deposited, funds only release via `fulfill_with_attestation()`. Add a private cancel/timeout flow to reclaim escrowed tokens.
 
 ## License
 
