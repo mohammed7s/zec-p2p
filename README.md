@@ -136,6 +136,12 @@ zec-p2p/
 
 - Aztec CLI/sandbox matching `v3.0.0-nightly.20251016` (installs aztec-nargo)
 
+### Start local sandbox
+
+```bash
+PXE_PROVER_ENABLED=1 aztec start --sandbox
+```
+
 ## Install & Build
 
 ```bash
@@ -143,9 +149,11 @@ zec-p2p/
 cd js_test
 yarn install
 
-# From project root, build contracts + bindings
-./scripts/build-all.sh      # AttVerifier, BusinessProgram, Escrow
-./scripts/build-token.sh    # Token bindings
+# Build contracts + bindings (from js_test/)
+yarn build           # runs scripts/build-all.sh and scripts/build-token.sh
+# or run individual pieces:
+# yarn build:contracts   # AttVerifier, BusinessProgram, Escrow
+# yarn build:token       # Token bindings
 ```
 
 ## Running Tests

@@ -21,7 +21,10 @@
     "start": "tsx index.ts",
     "start:deploy": "tsx deploy.ts",
     "start:verify": "tsx verify_att.ts",
-    "test:e2e": "node --import tsx --test test/escrow-e2e.test.ts"
+    "test:e2e": "node --import tsx --test test/escrow-e2e.test.ts",
+    "build:contracts": "cd .. && ./scripts/build-all.sh",
+    "build:token": "cd .. && ./scripts/build-token.sh",
+    "build": "yarn build:contracts && yarn build:token"
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e",
   "devDependencies": {

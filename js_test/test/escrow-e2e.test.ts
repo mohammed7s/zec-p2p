@@ -28,6 +28,37 @@ import { BusinessProgramContract } from "../bindings/BusinessProgram.js";
 import { OTCEscrowContract } from "../bindings/OTCEscrow.js";
 import { encodePacked } from "../lib/encoding.js";
 import { computeCommitmentHash } from "../lib/commitment.js";
+import { deriveKeys } from "@aztec/stdlib/keys";
+
+// Helper function to deploy escrow with generated secret key (like OTC desk pattern)
+async function deployEscrowContract(
+    wallet: any,
+    deployer: AztecAddress,
+    tokenAddress: AztecAddress,
+    tokenAmount: bigint,
+    commitmentHash: bigint,
+    attVerifierAddress: AztecAddress,
+    businessProgramAddress: AztecAddress
+) {
+    // Generate a secret key for the escrow contract
+    const secretKey = Fr.random();
+
+    // Derive public keys from the secret key
+    const { publicKeys } = await deriveKeys(secretKey);
+
+    // Deploy the contract with the derived public keys
+    const deployed = await OTCEscrowContract.deployWithPublicKeys(
+        publicKeys,
+        wallet,
+        tokenAddress,
+        tokenAmount,
+        commitmentHash,
+        attVerifierAddress,
+        businessProgramAddress
+    ).send({ from: deployer }).deployed();
+
+    return { contract: deployed, secretKey };
+}
 
 const { AZTEC_NODE_URL = "http://localhost:8080" } = process.env;
 
@@ -54,6 +85,7 @@ describe("zkTLS Escrow E2E Test", () => {
     let attVerifier: AttVerifierContract;
     let businessProgram: BusinessProgramContract;
     let escrow: OTCEscrowContract;
+    let escrowSecretKey: Fr;
 
     let commitmentHash: bigint;
 
@@ -124,23 +156,32 @@ describe("zkTLS Escrow E2E Test", () => {
             .deployed();
         console.log("BusinessProgram deployed:", businessProgram.address.toString());
 
-        // Deploy Escrow
+        // Deploy Escrow with secret key (following OTC desk pattern)
         console.log("Deploying Escrow...");
-        escrow = await OTCEscrowContract.deploy(
+        ({ contract: escrow, secretKey: escrowSecretKey } = await deployEscrowContract(
             sellerWallet,
+            sellerAddress,
             token.address,
             TOKEN_AMOUNT,
             commitmentHash,
             attVerifier.address,
             businessProgram.address
-        ).send({ from: sellerAddress }).deployed();
+        ));
         console.log("Escrow deployed:", escrow.address.toString());
 
-        // Register contracts in buyer wallet
+        // Register contracts in seller wallet (they deployed them and will interact first)
+        await sellerWallet.registerContract(token);
+        await sellerWallet.registerContract(attVerifier);
+        await sellerWallet.registerContract(businessProgram);
+        // Register escrow WITH secret key so seller can see escrow's private state
+        await sellerWallet.registerContract(escrow, undefined, escrowSecretKey);
+
+        // Register contracts in buyer wallet (they will interact later)
         await buyerWallet.registerContract(token);
         await buyerWallet.registerContract(attVerifier);
         await buyerWallet.registerContract(businessProgram);
-        await buyerWallet.registerContract(escrow);
+        // Register escrow WITH secret key so buyer can build proofs that spend escrow's notes
+        await buyerWallet.registerContract(escrow, undefined, escrowSecretKey);
     });
 
     test("full escrow flow", async () => {
@@ -162,17 +203,18 @@ describe("zkTLS Escrow E2E Test", () => {
             TOKEN_AMOUNT,
             nonce
         );
-        await sellerWallet.createAuthWit(sellerAddress, { caller: escrow.address, action });
+        const witness = await sellerWallet.createAuthWit(sellerAddress, { caller: escrow.address, action });
 
         // Now seller can deposit with the authorized nonce
         await escrow.methods.deposit_tokens(nonce)
-            .send({ from: sellerAddress })
+            .send({ from: sellerAddress, authWitnesses: [witness] })
             .wait();
 
         const sellerBalanceAfterDeposit = await token.methods.balance_of_private(sellerAddress).simulate({ from: sellerAddress });
         const escrowBalanceAfterDeposit = await token.methods.balance_of_private(escrow.address).simulate({ from: sellerAddress });
         console.log("Seller balance after deposit:", sellerBalanceAfterDeposit);
         console.log("Escrow balance after deposit:", escrowBalanceAfterDeposit);
+        assert.strictEqual(sellerBalanceAfterDeposit, 0n);
         assert.strictEqual(escrowBalanceAfterDeposit, TOKEN_AMOUNT);
 
         // 3. Buyer makes Revolut payment (off-chain - simulated with test data)
